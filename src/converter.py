@@ -3,11 +3,19 @@ from structures.Stack import Stack
 class Converter:
     precedence = {'+': 1, '-': 1, '*': 2, '/': 2, '^': 3}
 
-    def hasPrecedent(self, operator1: str, operator2: str):
+    def preHasPrecedent(self, operator1: str, operator2: str):
         if operator2 == "(":
             return True
+        if(operator1=="^" and operator2=="^"):
+            return False
+        return (self.precedence[operator1] <= self.precedence[operator2])
+
+    def postHasPrecedent(self, operator1: str, operator2: str):
+        if operator2 == "(":
+            return True
+        if(operator1=="^" and operator2=="^"):
+            return True
         return (self.precedence[operator1] > self.precedence[operator2])
-        
 
     def reverse(self, string: str) -> str:
         s = ""
@@ -37,7 +45,7 @@ class Converter:
                     else:
                         postfix += operator
             else:
-                while((not stack.isEmpty()) and (not self.hasPrecedent(c, stack.getTop()))):
+                while((not stack.isEmpty()) and (not self.postHasPrecedent(c, stack.getTop()))):
                     postfix += stack.pop()
                 stack.push(c)
         while(not stack.isEmpty()):
@@ -46,14 +54,36 @@ class Converter:
 
 
     def infix_to_prefix(self, infix):
-        print(1,infix)
-        prefix = self.reverse(infix)
-        print(2,prefix)
-        prefix = self.infix_to_postfix(prefix)
-        print(3,prefix)
-        prefix = self.reverse(prefix)
-        print(4,prefix)
-        return prefix
+        # prefix = self.reverse(infix)
+        # prefix = self.infix_to_postfix(prefix)
+        # prefix = self.reverse(prefix)
+        operators = Stack()
+        operands = Stack()
+        for c in infix:
+            if c == "(":
+                operators.push(c)
+            elif c == ")":
+                while (not operators.isEmpty() and (operators.getTop()!="(")):
+                    operand1 = operands.pop()
+                    operand2 = operands.pop()
+                    operator = operators.pop()
+                    operands.push(operator+operand2+operand1)
+                operators.pop() # removing "("
+            elif c.isalnum():
+                operands.push(c)
+            else:
+                while (not operators.isEmpty() and self.preHasPrecedent(c, operators.getTop()) and (operators.getTop()!="(")):
+                    operand1 = operands.pop()
+                    operand2 = operands.pop()
+                    operator = operators.pop()
+                    operands.push(operator+operand2+operand1)
+                operators.push(c)
+        while not operators.isEmpty():
+            operand1 = operands.pop()
+            operand2 = operands.pop()
+            operator = operators.pop()
+            operands.push(operator+operand2+operand1)
+        return operands.pop()
 
     def postfix_to_infix(self, postfix: str) -> str:
         stack = Stack()
@@ -84,10 +114,21 @@ class Converter:
         return infix
 
     def prefix_to_postfix(self, prefix: str) -> str:
-        postfix = self.reverse(prefix)
-        postfix = self.postfix_to_prefix(postfix)
-        postfix = self.reverse(postfix)
-        return postfix
+        stack = Stack()
+        prefix = self.reverse(prefix)
+        for c in prefix:
+            # if c is an operand
+            if(c.isalnum()):
+                stack.push(c)
+            else:
+                operand1 = stack.pop()
+                operand2 = stack.pop()
+                stack.push(operand1+operand2+c)
+        return stack.pop()
 
 
-    
+'''
+abcd^e-fgh*+^*+i-
+-+a*b^-^cde+f*ghi
+a+b*(c^d-e)^(f+g*h)-i
+'''
