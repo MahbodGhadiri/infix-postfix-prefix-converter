@@ -77,18 +77,19 @@ class GUI:
         self.prefix_result.grid(row=3, column=1, sticky=tk.W)
 
     def renderTree(self):
-        [tree, depth] = generate(self.postfix)
+        tree = generate(self.postfix)
+        depth = tree.depth
         treeWindow = tk.Toplevel(self.root)
         # sets the title of the
         # Toplevel widget
         treeWindow.title("Expression Tree")
     
         # sets the geometry of toplevel
-        d = 2 ** depth * 5 # distance between same level nodes
-        convas_width = 4*d if 4*d>250 else 250 
-        convas_height = 60+(25*depth) if 60+(25*depth)>250 else 250
+        d = 2 ** (depth-1) * 6 # distance between same level nodes
+        canvas_width = 4*d if 4*d>250 else 250 
+        canvas_height = 60+(30*depth) if 60+(25*depth)>250 else 250
         
-        treeWindow.geometry(f"{convas_width}x{10+convas_height}")
+        treeWindow.geometry(f"{canvas_width}x{10+canvas_height}")
     
         #adding a custom method to Canvas class
         def _create_circle(self, x, y, r = 9, **kwargs):
@@ -96,7 +97,7 @@ class GUI:
         tk.Canvas.create_circle = _create_circle
 
         # setting up canvas and horizental scrollbar
-        canvas = tk.Canvas(treeWindow, width=convas_width, height=convas_height, borderwidth=0, highlightthickness=0, scrollregion=(0,0,4*d,60+(25*depth))
+        canvas = tk.Canvas(treeWindow, width=canvas_width, height=canvas_height, borderwidth=0, highlightthickness=0, scrollregion=(0,0,canvas_width,canvas_height)
         )
         canvas.pack(expand=True, fill=tk.BOTH)
         hbar=tk.Scrollbar(treeWindow,orient=tk.HORIZONTAL)
@@ -111,7 +112,7 @@ class GUI:
         bfs algorithm is being used to traverse the tree
         '''
         queue = Queue()
-        queue.add([tree,convas_width/2]) 
+        queue.add([tree,canvas_width/2]) 
         h = 40
         while not queue.isEmpty():
             next_queue = Queue()
@@ -130,7 +131,7 @@ class GUI:
                     canvas.tag_lower(l)
                     next_queue.add([tree.right,w+d])
             d /= 2
-            h += 25
+            h += 30
             queue = next_queue
 
 

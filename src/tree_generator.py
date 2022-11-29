@@ -6,18 +6,15 @@ def generate(postfix):
     depth: int = 0
     for c in postfix:
         if c.isalnum():
-            stack.push(c)
+            tree = Tree(c)
+            stack.push(tree)
         else:
             right = stack.pop()
-            if(isinstance(right,str)):
-                right = Tree(right)
             left = stack.pop()
-            if(isinstance(left,str)):
-                left = Tree(left)
-            tree = Tree(c, left, right)
-            depth += 1
+            depth = left.depth if left.depth > right.depth else right.depth
+            tree = Tree(c, left, right, depth=depth+1)
             stack.push(tree)
-    return [stack.pop(), depth]
+    return stack.pop()
 
 
 
