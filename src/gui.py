@@ -1,89 +1,108 @@
 import tkinter as tk
+from tkinter import messagebox
 from converter import Converter
 from tree_generator import generate
 from structures.Queue import Queue
+
 class GUI:
     def __init__(self):
-        #define variables
+        #define state variables
         self.infix = ""
         self.postfix = ""
         self.prefix = ""
+        self.isInTreeMode = False
         #set root
         root = tk.Tk()
         self.root = root
         #set title
         root.title("Infix Postfix Prefix Converter")
-        #set size
-        root.geometry("400x130")
         #add labels
-        tk.Label(root, text="Enter Expression:  ").grid(row=0)
-        tk.Label(root, text="Infix:  ").grid(row=1, column=0, sticky=tk.W)
-        tk.Label(root, text="Postfix:  ").grid(row=2, column=0, sticky=tk.W)
-        tk.Label(root, text="Prefix:  ").grid(row=3, column=0, sticky=tk.W)
-        self.infix_result = tk.Label(self.root, text=self.infix)
-        self.infix_result.grid(row=1, column=1, sticky=tk.W)
-        self.postfix_result = tk.Label(self.root, text=self.postfix)
-        self.postfix_result.grid(row=2, column=1, sticky=tk.W)
-        self.prefix_result = tk.Label(self.root, text=self.prefix)
-        self.prefix_result.grid(row=3, column=1, sticky=tk.W)
+        tk.Label(root, text="Enter Expression:  ").grid(row=0, sticky=(tk.N, tk.S, tk.W))
+        tk.Label(root, text="Infix:  ").grid(row=1, column=0, sticky=(tk.N, tk.S, tk.W))
+        tk.Label(root, text="Postfix:  ").grid(row=2, column=0, sticky=(tk.N, tk.S, tk.W))
+        tk.Label(root, text="Prefix:  ").grid(row=3, column=0, sticky=(tk.N, tk.S, tk.W))
+        self.addResultLabels()
         #add input box
         self.entry = tk.Entry(root)
-        self.entry.grid(row = 0, column=1)
+        self.entry.grid(row = 0, column=1, sticky=(tk.N, tk.S, tk.E, tk.W))
         #add buttons
-        tk.Button(root,
+        self.evaluateButton = tk.Button(root,
             text= "Evaluate",
             command= self.evaluate
-            ).grid(row=4, column=1)
-        tk.Button(root,
+        )
+        self.evaluateButton.grid(row=4, column=1, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.renderTreeButton = tk.Button(root,
             text= "View Tree",
             command= self.renderTree
-            ).grid(row=4, column=2)
-        #add drop down menu
-        self.mode = tk.StringVar(root)
-        self.mode.set("Infix") # default mode
-        w = tk.OptionMenu(root, self.mode, "Infix", "Postfix", "Prefix").grid(row=0,column=2)
+        )
+        self.renderTreeButton.grid(row=4, column=2, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.renderTreeButton["state"] = "disable"
+        #resizing configs
+        root.columnconfigure(0, weight=1)
+        root.columnconfigure(1, weight=1)
+        root.columnconfigure(2, weight=1)
+        root.minsize(400, 130)
+        root.maxsize(500, 130)
+        root.resizable(True,False)
         root.mainloop()
 
     def evaluate(self):
         converter = Converter()
         input = self.entry.get().replace(" ","")
-        mode = self.mode.get()
+
+        if input == "" or input == None:
+            self.resetExpressions()
+            return
+
+        #validate expression
+        try:
+            converter.validateExpression(input)
+        except:
+            self.showInvalidExpressionDialog()
+            self.resetExpressions()
+            return
+
+        mode = converter.detectMode(input)
         print(mode, input)
-        if(mode == "Infix"):
-            self.infix = input
-            self.postfix = converter.infix_to_postfix(input)
-            self.prefix = converter.infix_to_prefix(input)
-        elif(mode == "Postfix"):
-            self.postfix = input
-            self.infix = converter.postfix_to_infix(input)
-            self.prefix = converter.postfix_to_prefix(input)
-        elif(mode == "Prefix"):
-            self.prefix = input
-            self.postfix = converter.prefix_to_postfix(input)
-            self.infix = converter.prefix_to_infix(input)
-        else:
-            raise  Exception(f"mode: {mode} is not defined")
-        #removing old labels
-        if(self.infix_result):
-            self.infix_result.destroy()
-            self.postfix_result.destroy()
-            self.prefix_result.destroy()
-        #adding new labels
-        self.infix_result = tk.Label(self.root, text=self.infix)
-        self.infix_result.grid(row=1, column=1, sticky=tk.W)
-        self.postfix_result = tk.Label(self.root, text=self.postfix)
-        self.postfix_result.grid(row=2, column=1, sticky=tk.W)
-        self.prefix_result = tk.Label(self.root, text=self.prefix)
-        self.prefix_result.grid(row=3, column=1, sticky=tk.W)
+
+        try:
+            if(mode == "Infix"):
+                self.infix = input
+                self.postfix = converter.infix_to_postfix(input)
+                self.prefix = converter.infix_to_prefix(input)
+            elif(mode == "Postfix"):
+                self.postfix = input
+                self.infix = converter.postfix_to_infix(input)
+                self.prefix = converter.postfix_to_prefix(input)
+            elif(mode == "Prefix"):
+                self.prefix = input
+                self.postfix = converter.prefix_to_postfix(input)
+                self.infix = converter.prefix_to_infix(input)
+        except:
+            self.showInvalidExpressionDialog()
+            self.resetExpressions()
+            return
+        self.renderTreeButton["state"] = "normal"
+        self.addResultLabels()
 
     def renderTree(self):
+        # do not open a new window if it is already open
+        if self.isInTreeMode:
+            return
+        self.isInTreeMode = True
+
+        if not self.postfix:
+            self.showEmptyExpressionDialog()
+            return
         tree = generate(self.postfix)
         depth = tree.depth
         treeWindow = tk.Toplevel(self.root)
+        self.treeWindow = treeWindow
         # sets the title of the
         # Toplevel widget
         treeWindow.title("Expression Tree")
-    
+        # set closing protocol
+        treeWindow.protocol("WM_DELETE_WINDOW", self.onTreeWindowClose)
         # sets the geometry of toplevel
         d = 2 ** (depth-1) * 6 # distance between same level nodes
         canvas_width = 4*d if 4*d>250 else 250 
@@ -135,4 +154,33 @@ class GUI:
             queue = next_queue
 
 
-        
+    def addResultLabels(self):
+        # removing old labels
+        if(hasattr(self,"infix_result")):
+            self.infix_result.destroy()
+            self.postfix_result.destroy()
+            self.prefix_result.destroy()
+        #adding new labels
+        self.infix_result = tk.Label(self.root, text=self.infix)
+        self.infix_result.grid(row=1, column=1, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.postfix_result = tk.Label(self.root, text=self.postfix)
+        self.postfix_result.grid(row=2, column=1, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.prefix_result = tk.Label(self.root, text=self.prefix)
+        self.prefix_result.grid(row=3, column=1, sticky=(tk.N, tk.S, tk.E, tk.W))
+
+    def showEmptyExpressionDialog(self):
+        messagebox.showerror('Expression Error', 'Error: No Expression!')
+
+    def showInvalidExpressionDialog(self):
+        messagebox.showerror('Expression Error', 'Error: Invalid Expression!')
+
+    def resetExpressions(self):
+        self.postfix = ""
+        self.infix = ""
+        self.prefix = ""
+        self.renderTreeButton["state"] = 'disable'
+        self.addResultLabels()
+
+    def onTreeWindowClose(self):
+        self.isInTreeMode = False
+        self.treeWindow.destroy()
