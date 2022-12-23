@@ -2,6 +2,7 @@ from structures.Stack import Stack
 
 class Converter:
     precedence = {'+': 1, '-': 1, '*': 2, '/': 2, '^': 3}
+    operators = ['-','+','*','/','^']
 
     def preHasPrecedent(self, operator1: str, operator2: str):
         if operator2 == "(":
@@ -54,9 +55,6 @@ class Converter:
 
 
     def infix_to_prefix(self, infix):
-        # prefix = self.reverse(infix)
-        # prefix = self.infix_to_postfix(prefix)
-        # prefix = self.reverse(prefix)
         operators = Stack()
         operands = Stack()
         for c in infix:
@@ -126,8 +124,53 @@ class Converter:
                 stack.push(operand1+operand2+c)
         return stack.pop()
 
+    def detectMode(self, expression: str) -> str:
+        # check for prefix
+        for c in expression:
+            if c != '(':
+                if not c.isalnum():
+                    return "Prefix"
+                break
+        #check for postfix
+        expression = expression[::-1]
+        for c in expression:
+            if c != ")":
+                if not c.isalnum():
+                    return "Postfix"
+                break
+
+        return "Infix"
+
+    def validateExpression(self, expression):
+        operatorsCount = 0
+        operandsCount = 0
+        openParenthesis = 0
+        for c in expression:
+            if c == "(":
+                openParenthesis += 1
+            elif c == ")":
+                if openParenthesis > 0:
+                    openParenthesis -= 1
+                else:
+                    raise "Wrong parenthesis"
+            elif c.isalnum():
+                operandsCount += 1
+            else:
+                if c in self.operators:
+                    operatorsCount += 1
+                else:
+                    raise "unsupported operator"
+        if openParenthesis != 0:
+            raise "Wrong parenthesis"
+        if operandsCount != operatorsCount + 1:
+            raise "Invalid expression"
+            
 
 '''
+simple test cases
+
+a-b-c
+a^b^c
 abcd^e-fgh*+^*+i-
 -+a*b^-^cde+f*ghi
 a+b*(c^d-e)^(f+g*h)-i
